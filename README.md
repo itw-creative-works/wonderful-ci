@@ -1,2 +1,2 @@
-# ev-code-signing-server
+# wonderful-ci-server
 EV Code Signing Server
