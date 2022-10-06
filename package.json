@@ -1,0 +1,50 @@
+{
+  "name": "wonderful-ci",
+  "version": "0.0.24",
+  "description": "Automated EV Code Signing Server",
+  "main": "./dist/index.js",
+  "bin": {
+    "wonderful-ci": "bin/wonderful-ci"
+  },
+  "scripts": {
+    "test": "npm run prepare && ./node_modules/mocha/bin/mocha test/ --recursive --timeout=10000",
+    "start": "npm run prepare && ./bin/wonderful-ci",
+    "_start": "npm run prepare && node ./dist/index.js",
+    "help": "echo 'npm start -- -v'",
+    "prepare": "node -e 'require(`prepare-package`)()'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/itw-creative-works/ev-code-signing-server.git"
+  },
+  "engines": {
+    "node": "12"
+  },
+  "keywords": [
+    "ci",
+    "codesigning",
+    "codesign",
+    "ev-certificate"
+  ],
+  "author": "ITW Creative Works",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/itw-creative-works/ev-code-signing-server/issues"
+  },
+  "homepage": "https://itwcreativeworks.com",
+  "dependencies": {
+    "@octokit/rest": "^19.0.4",
+    "axios": "^0.27.2",
+    "backend-manager": "^2.5.21",
+    "chalk": "^4.1.2",
+    "mime-types": "^2.1.35",
+    "yaml": "^2.1.2"
+  },
+  "devDependencies": {
+    "mocha": "^8.4.0",
+    "prepare-package": "^0.0.16"
+  },
+  "peerDependencies": {
+    "@nut-tree/nut-js": "^2.3.0"
+  }
+}
