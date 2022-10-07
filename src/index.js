@@ -323,7 +323,7 @@ Main.prototype.process_sign = function (currentRelease, data) {
       } else if (win && win.includes('signtool.exe')) {
         return true
       }
-    }, {interval: 1000, timeout: 45000})
+    }, {interval: 1000, timeout: 60000})
     .then(async (r) => {
       console.log(chalk.blue(`Typing password to signtool.exe`));
       nutjs = nutjs || require(path.join(process.cwd(), 'node_modules', '@nut-tree/nut-js'));
