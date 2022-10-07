@@ -99,11 +99,11 @@ Main.prototype.attachListener = function () {
         const id = doc.ref.path;
         const data = doc.data();
         
-        if (blacklist.includes(id)) {
+        if (
+          blacklist.find(item => id === item.id && data.date.timestampUNIX === item.date.timestampUNIX)
+        ) {
           console.warn(chalk.yellow(`Skipping ${id} update because it's currently processing or already processed`));
         } else {
-          blacklist.push(id)
-
           self.process(id, data)
           .then(r => {
             self.statusUpdate(id, 'complete').catch(e => e)
@@ -140,6 +140,8 @@ Main.prototype.process = function (id, data) {
       
       wait: argv.wait !== 'false',
     }
+
+    blacklist.push({id: id, timestampUNIX: data.date.timestampUNIX})
     
     const statusReset = await self.statusUpdate(id, null).catch(e => e);
 
