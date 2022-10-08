@@ -100,7 +100,7 @@ Main.prototype.attachListener = function () {
         const data = doc.data();
         
         if (
-          blacklist.find(item => id === item.id && data.date.timestampUNIX === item.date.timestampUNIX)
+          blacklist.find(item => id === item.id && get(data, 'date.timestampUNIX') === get(item, 'date.timestampUNIX'))
         ) {
           console.warn(chalk.yellow(`Skipping ${id} update because it's currently processing or already processed`));
         } else {
