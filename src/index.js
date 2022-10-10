@@ -425,6 +425,7 @@ Main.prototype.process_uploadToDownloadServer = function (data) {
     let processPromises = [];
     let release;
     
+    // @universal
     const assetsToUpload = [
       {
         path: path.join('assets', data.package.name, `${getHyphenatedName(data)}-Setup-${data.package.version}${SIGNED}.exe`),
@@ -432,7 +433,8 @@ Main.prototype.process_uploadToDownloadServer = function (data) {
         match: /\.exe/ig,
       },
       {
-        path: path.join('assets', data.package.name, `${getHyphenatedName(data)}-${data.package.version}.dmg`),
+        // path: path.join('assets', data.package.name, `${getHyphenatedName(data)}-${data.package.version}.dmg`),
+        path: path.join('assets', data.package.name, `${getHyphenatedName(data)}-${data.package.version}-universal.dmg`),
         name: `${getHyphenatedName(data)}.dmg`,
         match: /\.dmg/ig,
       },
