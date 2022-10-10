@@ -310,7 +310,7 @@ Main.prototype.process_sign = function (currentRelease, data) {
 
     // Perform sign
     for (var i = 0; i < 3; i++) {
-      signPromise = await process_signInner(currentRelease, data, i).catch(e => e);
+      signPromise = await self.process_signInner(currentRelease, data, i).catch(e => e);
       if (!(signPromise instanceof Error)) {
         return resolve()
       }
