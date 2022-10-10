@@ -309,7 +309,24 @@ Main.prototype.process_sign = function (currentRelease, data) {
     jetpack.copy(exePath, exePathSigned)
 
     // Perform sign
-    console.log(chalk.blue(`Command: ${Manager.config.signing.command}`));
+    for (var i = 0; i < 3; i++) {
+      signPromise = await process_signInner(currentRelease, data, i).catch(e => e);
+      if (!(signPromise instanceof Error)) {
+        return resolve()
+      }
+    }
+
+    return reject(new Error('Failed to sign after multiple attempts'));
+  });
+};
+
+Main.prototype.process_signInner = function (currentRelease, data, attempt) {
+  return new Promise(async function(resolve, reject) {
+    let signPromise;
+    let passwordPromise;
+
+    console.log(chalk.blue(`Command (${attempt}): ${Manager.config.signing.command}`));
+
     if (getPlatform() === 'windows') {
       signPromise = asyncCommand(Manager.config.signing.command).catch(e => passwordPromise = e)
     }
@@ -325,7 +342,7 @@ Main.prototype.process_sign = function (currentRelease, data) {
       } else if (win && win.includes('signtool.exe')) {
         return true
       }
-    }, {interval: 1000, timeout: 60000})
+    }, {interval: 7000, timeout: 60000})
     .then(async (r) => {
       console.log(chalk.blue(`Typing password to signtool.exe`));
       nutjs = nutjs || require(path.join(process.cwd(), 'node_modules', '@nut-tree/nut-js'));
@@ -344,7 +361,7 @@ Main.prototype.process_sign = function (currentRelease, data) {
     }
 
     console.log(chalk.green(`Sign completed successfully`));
-    return resolve()
+    return resolve()    
   });
 };
 
