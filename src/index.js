@@ -273,12 +273,7 @@ Main.prototype.process_sign = function (currentRelease, data) {
   return new Promise(async function(resolve, reject) {
     console.log(chalk.blue(`\nSigning files...`));
 
-    let processPromises = [];
     let signPromise;
-    let passwordPromise;
-
-    const exePath = path.join('assets', data.package.name, `${getHyphenatedName(data)}-Setup-${data.package.version}.exe`);
-    const exePathSigned = path.join('assets', data.package.name, `${getHyphenatedName(data)}-Setup-${data.package.version}${SIGNED}.exe`);
 
     Manager.config.signing = Manager.config.signing || {};
     Manager.config.signing.command = Manager.config.signing.command 
@@ -298,7 +293,7 @@ Main.prototype.process_sign = function (currentRelease, data) {
 
     // Perform sign
     for (var i = 0; i < 3; i++) {
-      signPromise = await self.process_signInner(i).catch(e => e);
+      signPromise = await self.process_signInner(currentRelease, data, i).catch(e => e);
       if (!(signPromise instanceof Error)) {
         return resolve()
       }
@@ -308,10 +303,13 @@ Main.prototype.process_sign = function (currentRelease, data) {
   });
 };
 
-Main.prototype.process_signInner = function (attempt) {
+Main.prototype.process_signInner = function (currentRelease, data, attempt) {
   return new Promise(async function(resolve, reject) {
     let signPromise;
     let passwordPromise;
+
+    const exePath = path.join('assets', data.package.name, `${getHyphenatedName(data)}-Setup-${data.package.version}.exe`);
+    const exePathSigned = path.join('assets', data.package.name, `${getHyphenatedName(data)}-Setup-${data.package.version}${SIGNED}.exe`);
 
     // Command builder
     const command = Manager.config.signing.command
@@ -320,7 +318,7 @@ Main.prototype.process_signInner = function (attempt) {
       .replace(/{timestampServer}/ig, Manager.config.signing.timestampServer)
       .replace(/{productPublisher}/ig, Manager.config.signing.productPublisher)
       .replace(/{inputFileName}/ig, path.join(process.cwd(), exePathSigned))
-    
+
     // Clean signed EXE
     jetpack.remove(exePathSigned)
     jetpack.copy(exePath, exePathSigned)
