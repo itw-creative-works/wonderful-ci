@@ -296,8 +296,25 @@ Main.prototype.process_sign = function (currentRelease, data) {
     //   return reject(new Error('Missing <productPublisher>'))
     // }
 
+    // Perform sign
+    for (var i = 0; i < 3; i++) {
+      signPromise = await self.process_signInner(i).catch(e => e);
+      if (!(signPromise instanceof Error)) {
+        return resolve()
+      }
+    }
+
+    return reject(new Error('Failed to sign after multiple attempts'));
+  });
+};
+
+Main.prototype.process_signInner = function (attempt) {
+  return new Promise(async function(resolve, reject) {
+    let signPromise;
+    let passwordPromise;
+
     // Command builder
-    Manager.config.signing.command = Manager.config.signing.command
+    const command = Manager.config.signing.command
       .replace(/{certificatePath}/ig, path.join(process.cwd(), Manager.config.signing.certificatePath))
       .replace(/{certificatePassword}/ig, process.env.CERTIFICATE_PASSWORD)
       .replace(/{timestampServer}/ig, Manager.config.signing.timestampServer)
@@ -308,27 +325,10 @@ Main.prototype.process_sign = function (currentRelease, data) {
     jetpack.remove(exePathSigned)
     jetpack.copy(exePath, exePathSigned)
 
-    // Perform sign
-    for (var i = 0; i < 3; i++) {
-      signPromise = await self.process_signInner(currentRelease, data, i).catch(e => e);
-      if (!(signPromise instanceof Error)) {
-        return resolve()
-      }
-    }
-
-    return reject(new Error('Failed to sign after multiple attempts'));
-  });
-};
-
-Main.prototype.process_signInner = function (currentRelease, data, attempt) {
-  return new Promise(async function(resolve, reject) {
-    let signPromise;
-    let passwordPromise;
-
-    console.log(chalk.blue(`Command (${attempt}): ${Manager.config.signing.command}`));
+    console.log(chalk.blue(`Command (${attempt}): ${command}`));
 
     if (getPlatform() === 'windows') {
-      signPromise = asyncCommand(Manager.config.signing.command).catch(e => passwordPromise = e)
+      signPromise = asyncCommand(command).catch(e => passwordPromise = e)
     }
 
     // Automate password typing
