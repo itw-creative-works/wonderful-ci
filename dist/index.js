@@ -60,7 +60,7 @@ Main.prototype.main = async function (options) {
   self.options = options || {};
 
   self.octokit = new Octokit({
-    auth: process.env.GH_ACCESS_TOKEN,
+    auth: process.env.GH_TOKEN,
   })
 
   // Create directories
@@ -472,7 +472,8 @@ Main.prototype.process_uploadToDownloadServer = function (data) {
         throw new Error(`There is no installer`)
       }
 
-      return downloadServerReleases[0];
+      // return downloadServerReleases[0];
+      return downloadServerReleases.find(r => r.tag_name === 'installer' || r.name === 'installer');
     }
 
     console.log(chalk.blue(`Checking for installer tag...`));  
@@ -569,6 +570,7 @@ Main.prototype.listReleases = function (payload) {
     self.octokit.repos.listReleases({
       owner: payload.owner,
       repo: payload.repo,
+      per_page: 100,
     })
     .then(releases => {
       if (!releases || !releases.data || releases.data.length < 1) {

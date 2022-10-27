@@ -1,6 +1,6 @@
 {
   "name": "wonderful-ci",
-  "version": "0.0.36",
+  "version": "0.0.37",
   "description": "Automated EV Code Signing Server",
   "main": "./dist/index.js",
   "bin": {
