@@ -661,7 +661,7 @@ Main.prototype.download = function (name, release, update) {
     })
     .then(r => {
       jetpack.write(savePath, Buffer.from(r.data));
-      console.log(chalk.green(`Downloaded: ${release.name} to ${savePath}`));
+      console.log(chalk.green(`Downloaded: ${release.name} (${release.id}) to ${savePath}`));
       return resolve()
     })
     .catch(e => reject(e))
