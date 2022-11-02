@@ -649,7 +649,7 @@ Main.prototype.download = function (name, release, update) {
     const downloadURL = release.browser_download_url;
     const savePath = path.join(process.cwd(), 'assets', name, release.name);    
 
-    console.log(chalk.blue(`Downloading: ${release.name} to ${savePath}`));
+    console.log(chalk.blue(`Downloading: ${release.name} (${release.id}) to ${savePath}`));
 
     await self.octokit.request('GET /repos/{owner}/{repo}/releases/assets/{asset_id}', {
       owner: update.owner,
