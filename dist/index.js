@@ -780,5 +780,21 @@ async function asyncCommand(command) {
   });
 }
 
-module.exports = Main;
+// Transform all console.log, console.error, etc so that it puts the timestamp in front like [2020-01-01 @ 00:00:00]
+// Create a custom logger function
+const customLogger = (originalFn) => {
+  return (...args) => {
+    const now = new Date();
+    const timestamp = `[${now.toLocaleDateString()} @ ${now.toLocaleTimeString()}]:`;
+    originalFn.call(console, timestamp, ...args);
+  };
+};
 
+// Replace native console functions with custom logger
+console.log = customLogger(console.log);
+console.error = customLogger(console.error);
+console.warn = customLogger(console.warn);
+console.info = customLogger(console.info);
+console.debug = customLogger(console.debug);
+
+module.exports = Main;
