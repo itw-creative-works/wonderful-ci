@@ -86,6 +86,7 @@ Main.prototype.main = async function (options) {
 
 Main.prototype.attachListener = function () {
   const self = this;
+  const timestampUNIX = (new Date().getTime() / 1000);
 
   if (self.listener) {
     self.listener();
@@ -93,7 +94,7 @@ Main.prototype.attachListener = function () {
 
   self.listener = Manager.libraries.admin.firestore()
     .collection('ci-builds')
-    .where('date.timestampUNIX', '>=', (new Date().getTime() / 1000))
+    .where('date.timestampUNIX', '>=', timestampUNIX)
     .onSnapshot((snap) => {
       snap.forEach(doc => {
         const id = doc.ref.path;
@@ -121,7 +122,7 @@ Main.prototype.attachListener = function () {
       process.exit(1)
     })
 
-    console.error(chalk.blue(`Attaching new Firestore listener: ${new Date().toLocaleString()}`));
+    console.error(chalk.blue(`Attaching new Firestore listener`));
 
 };
 
