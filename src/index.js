@@ -1,7 +1,10 @@
+// Load the backend-manager
 const Manager = (new (require('backend-manager'))).init(
   exports,
   {
     log: true,
+    projectType: 'custom',
+    setupServer: false,
     serviceAccountPath: 'wonderful-ci/service-account.json',
     backendManagerConfigPath: 'wonderful-ci/backend-manager-config.json',
     useFirebaseLogger: false,
@@ -10,13 +13,14 @@ const Manager = (new (require('backend-manager'))).init(
     // uniqueAppName: appId,
   }
 )
+
+// Load packages
 const path = require('path');
 const { get, set } = Manager.require('lodash');
 const fetch = Manager.require('wonderful-fetch');
 const jetpack = Manager.require('fs-jetpack');
 const powertools = Manager.require('node-powertools');
 const argv = Manager.require('yargs').argv
-
 const { exec } = require('child_process');
 const chalk = require('chalk');
 const { Octokit } = require('@octokit/rest');
@@ -24,7 +28,10 @@ const crypto = require('crypto');
 const yaml = require('yaml');
 const mime = require('mime-types');
 const packageJSON = require('../package.json');
-let nutjs;
+const nutjs = require(path.join(process.cwd(), 'node_modules', 'automately'));
+
+// Set the delay between each key press
+nutjs.keyboard.config.autoDelayMs = 100;
 
 // const activeWindow = function () {
 //   return new Promise(function(resolve, reject) {
@@ -34,8 +41,8 @@ let nutjs;
 //           return resolve(win)
 //         } else {
 //           return reject(new Error('No window'))
-//         }   
-//       });      
+//         }
+//       });
 //     } catch (e) {
 //       return reject(e)
 //     }
@@ -50,7 +57,7 @@ const SIGNED = '-SIGNED';
 
 function Main() {
   const self = this;
-  
+
   self.options = {};
   self.listener = null;
 }
@@ -64,23 +71,23 @@ Main.prototype.main = async function (options) {
   })
 
   // Create directories
-  jetpack.dir('wonderful-ci')  
+  jetpack.dir('wonderful-ci')
 
-  await self.octokit.request('GET /zen', {})    
+  await self.octokit.request('GET /zen', {})
   .then(zen => {
 
     setInterval(function () {
       self.attachListener();
     }, 1000 * 60 * 10);
     self.attachListener();
-    
+
     console.log(chalk.green(`Ready to listen for updates (wonderful-ci v${packageJSON.version}): ${zen.data}`));
 
   })
   .catch(e => {
     console.error(chalk.red(`Error authenticating GitHub: ${e.message} \n${e.stack}`));
     return process.exit(1)
-  })    
+  })
 
 };
 
@@ -99,7 +106,7 @@ Main.prototype.attachListener = function () {
       snap.forEach(doc => {
         const id = doc.ref.path;
         const data = doc.data();
-        
+
         if (
           blacklist.find(item => id === item.id && data.date.timestampUNIX === item.timestampUNIX)
         ) {
@@ -109,11 +116,11 @@ Main.prototype.attachListener = function () {
           .then(r => {
             self.statusUpdate(id, 'complete').catch(e => e)
             console.log(chalk.green(`\n*-*-*- Completed ${data.package.productName} v${data.package.version} - ${id} -*-*-*`));
-          })          
+          })
           .catch(e => {
             self.statusUpdate(id, e).catch(e => e)
             console.error(chalk.red(`Error processing update: ${e.message} \n${e.stack}`));
-          })            
+          })
         }
 
       })
@@ -138,12 +145,12 @@ Main.prototype.process = function (id, data) {
       uploadToDownloadServer: argv.uploadToDownloadServer !== 'false',
       publishUpdateServer: argv.publishUpdateServer !== 'false',
       clean: argv.clean !== 'false',
-      
+
       wait: argv.wait !== 'false',
     }
 
     blacklist.push({id: id, timestampUNIX: data.date.timestampUNIX})
-    
+
     const statusReset = await self.statusUpdate(id, null).catch(e => e);
 
     if (statusReset instanceof Error) {
@@ -162,7 +169,7 @@ Main.prototype.process = function (id, data) {
     }
 
     console.log(chalk.green(`\n*-*-*- Publishing ${data.package.productName} v${data.package.version} - ${id} -*-*-*`));
-    
+
     if (options.wait) {
       await powertools.wait(2000)
     }
@@ -190,7 +197,7 @@ Main.prototype.process = function (id, data) {
     } else {
       console.warn(chalk.yellow(`\nSkipping download`));
     }
-    
+
     // Sign
     if (options.sign) {
       const result = await self.process_sign(currentUpdateServerRelease, data).catch(e => e);
@@ -199,7 +206,7 @@ Main.prototype.process = function (id, data) {
       }
     } else {
       console.warn(chalk.yellow(`\nSkipping signing`));
-    }   
+    }
 
     // Upload updates
     if (options.uploadToUpdateServer) {
@@ -216,7 +223,7 @@ Main.prototype.process = function (id, data) {
       const result = await self.process_uploadToDownloadServer(data).catch(e => e);
       if (result instanceof Error) {
         return reject(result);
-      }      
+      }
     } else {
       console.warn(chalk.yellow(`\nSkipping uploading download-server files`));
     }
@@ -226,7 +233,7 @@ Main.prototype.process = function (id, data) {
       const result = await self.process_publishUpdateServer(currentUpdateServerRelease, data).catch(e => e);
       if (result instanceof Error) {
         return reject(result);
-      }      
+      }
     } else {
       console.warn(chalk.yellow(`\nSkipping publishing update-server files`));
     }
@@ -247,7 +254,7 @@ Main.prototype.process_download = function (currentRelease, data) {
 
   return new Promise(function(resolve, reject) {
     let downloadPromises = [];
-    
+
     console.log(chalk.blue(`\nDownloading files...`));
 
     // Clean asset folder
@@ -277,7 +284,7 @@ Main.prototype.process_sign = function (currentRelease, data) {
     let signPromise;
 
     Manager.config.signing = Manager.config.signing || {};
-    Manager.config.signing.command = Manager.config.signing.command 
+    Manager.config.signing.command = Manager.config.signing.command
       || `${Manager.config.signing.signToolPath ? `"${Manager.config.signing.signToolPath}"` : 'signtool'} sign /f {certificatePath} /p {certificatePassword} /t {timestampServer} /n "{productPublisher}" /fd SHA256 {inputFileName}`;
 
     // Checks
@@ -344,8 +351,6 @@ Main.prototype.process_signInner = function (currentRelease, data, attempt) {
     }, {interval: 7000, timeout: 60000})
     .then(async (r) => {
       console.log(chalk.blue(`Typing password to signtool.exe`));
-      nutjs = nutjs || require(path.join(process.cwd(), 'node_modules', '@nut-tree/nut-js'));
-      nutjs.keyboard.config.autoDelayMs = 100;
       await nutjs.keyboard.type(process.env.CERTIFICATE_PASSWORD).catch(e => passwordPromise = e)
       await nutjs.keyboard.type(nutjs.Key.Enter).catch(e => passwordPromise = e)
     })
@@ -360,7 +365,7 @@ Main.prototype.process_signInner = function (currentRelease, data, attempt) {
     }
 
     console.log(chalk.green(`Sign completed successfully`));
-    return resolve()    
+    return resolve()
   });
 };
 
@@ -368,11 +373,11 @@ Main.prototype.process_uploadToUpdateServer = function (currentRelease, data) {
   const self = this;
 
   return new Promise(async function(resolve, reject) {
-    console.log(chalk.blue(`\nUploading update-server files...`));   
+    console.log(chalk.blue(`\nUploading update-server files...`));
 
     let processPromises = [];
 
-    // const exeName = 
+    // const exeName =
     const exePathSigned = path.join('assets', data.package.name, `${getHyphenatedName(data)}-Setup-${data.package.version}${SIGNED}.exe`);
     const yamlPath = path.join('assets', data.package.name, `latest.yml`);
     const yamlPathSigned = path.join('assets', data.package.name, `latest${SIGNED}.yml`);
@@ -390,18 +395,18 @@ Main.prototype.process_uploadToUpdateServer = function (currentRelease, data) {
     yamlFile.files[0].sha512 = hash;
     yamlFile.files[0].size = stats.size;
     yamlFile.sha512 = hash;
-    
+
     // Replace the releaseDate because YAML removes quotes
     yamlFileConverted = yaml.stringify(yamlFile)
       .replace(yamlFile.releaseDate, `'${yamlFile.releaseDate}'`)
 
-    jetpack.write(yamlPathSigned, yamlFileConverted);   
+    jetpack.write(yamlPathSigned, yamlFileConverted);
 
     // Upload release
     self.iterateRelevantAssets(currentRelease, data, (asset) => {
       let filePath;
       let fileName;
-      
+
       if (asset.name.match(/\.yml/)) {
         filePath = yamlPathSigned
       } else if (asset.name.match(/\.exe/)) {
@@ -436,11 +441,11 @@ Main.prototype.process_uploadToDownloadServer = function (data) {
   const self = this;
 
   return new Promise(async function(resolve, reject) {
-    console.log(chalk.blue(`\nUploading download-server files...`));   
+    console.log(chalk.blue(`\nUploading download-server files...`));
 
     let processPromises = [];
     let release;
-    
+
     // @universal
     const assetsToUpload = [
       {
@@ -458,12 +463,12 @@ Main.prototype.process_uploadToDownloadServer = function (data) {
         path: path.join('assets', data.package.name, `${getHyphenatedName(data).toLowerCase()}_${data.package.version}_amd64.deb`),
         name: `${getHyphenatedName(data).toLowerCase()}_amd64.deb`,
         match: /_amd64\.deb/ig,
-      },      
+      },
       {
         path: path.join('assets', data.package.name, `${getHyphenatedName(data).toLowerCase()}_${data.package.version}_i386.deb`),
         name: `${getHyphenatedName(data).toLowerCase()}_i386.deb`,
         match: /_i386\.deb/ig,
-      },           
+      },
     ]
 
     async function _getRelease() {
@@ -477,12 +482,12 @@ Main.prototype.process_uploadToDownloadServer = function (data) {
       return downloadServerReleases.find(r => r.tag_name === 'installer' || r.name === 'installer');
     }
 
-    console.log(chalk.blue(`Checking for installer tag...`));  
+    console.log(chalk.blue(`Checking for installer tag...`));
 
     release = await _getRelease().catch(e => e)
 
     if (release instanceof Error) {
-      console.log(chalk.blue(`Creating installer tag...`));  
+      console.log(chalk.blue(`Creating installer tag...`));
 
       await self.octokit.rest.repos.createRelease({
         owner: data.package.download.owner,
@@ -495,14 +500,14 @@ Main.prototype.process_uploadToDownloadServer = function (data) {
         await powertools.poll(async (index) => {
           release = await _getRelease().catch(e => e)
           if (release instanceof Error) {
-            console.log(chalk.yellow(`Could not find new installer tag. Searching again ${index}...`));  
+            console.log(chalk.yellow(`Could not find new installer tag. Searching again ${index}...`));
           } else {
             console.log(chalk.green('Created installer tag'));
             return true;
-          }  
+          }
         }, {interval: 3000, timeout: 35000})
         .catch(e => {
-          console.error(chalk.red(new Error(`Failed to create installer tag: ${release.message} \n${release.stack}`)));   
+          console.error(chalk.red(new Error(`Failed to create installer tag: ${release.message} \n${release.stack}`)));
         })
 
       })
@@ -510,10 +515,10 @@ Main.prototype.process_uploadToDownloadServer = function (data) {
 
       if (release instanceof Error) {
         return reject(release);
-      }   
+      }
     }
 
-    console.log(chalk.blue(`Installer tag is ready`));  
+    console.log(chalk.blue(`Installer tag is ready`));
 
     // Upload release
     assetsToUpload
@@ -542,7 +547,7 @@ Main.prototype.process_publishUpdateServer = function (currentRelease, data) {
   const self = this;
 
   return new Promise(async function(resolve, reject) {
-    console.log(chalk.blue(`\nPublishing ${data.package.version} update-server files...`));   
+    console.log(chalk.blue(`\nPublishing ${data.package.version} update-server files...`));
 
     self.octokit.repos.updateRelease({
       owner: data.package.update.owner,
@@ -579,7 +584,7 @@ Main.prototype.listReleases = function (payload) {
       }
       return resolve(releases.data)
     })
-    .catch(e => reject(e))     
+    .catch(e => reject(e))
   });
 };
 
@@ -589,7 +594,7 @@ Main.prototype.getCurrentRelease = function (releases, match) {
   const currentRelease = releases.find(rel => rel.name === match);
   if (!currentRelease) {
     return null;
-  }    
+  }
   return currentRelease;
 };
 
@@ -610,20 +615,20 @@ Main.prototype.updateReleaseAsset = function (payload, release, asset, filePath,
         repo: payload.repo,
         asset_id: asset.id,
       })
-      .catch(e => e);  
+      .catch(e => e);
 
       if (deleteResult instanceof Error) {
         if (deleteResult.status !== 404) {
           return reject(deleteResult)
         }
-      }  
+      }
       console.log(chalk.green(`Deleted live asset: ${asset.name}`));
     } else {
       console.log(chalk.blue(`Skipping non-existant live asset: ${name}`));
     }
 
     console.log(chalk.blue(`Uploading asset: ${name}`));
-    
+
     self.octokit.repos.uploadReleaseAsset({
       owner: payload.owner,
       repo: payload.repo,
@@ -639,16 +644,16 @@ Main.prototype.updateReleaseAsset = function (payload, release, asset, filePath,
       console.log(chalk.green(`Uploaded asset: ${name}`));
       return resolve();
     })
-    .catch(e => reject(e)); 
-  });  
+    .catch(e => reject(e));
+  });
 };
 
 Main.prototype.download = function (name, release, update) {
   const self = this;
-  
-  return new Promise(async function(resolve, reject) { 
+
+  return new Promise(async function(resolve, reject) {
     const downloadURL = release.browser_download_url;
-    const savePath = path.join(process.cwd(), 'assets', name, release.name);    
+    const savePath = path.join(process.cwd(), 'assets', name, release.name);
 
     console.log(chalk.blue(`Downloading: ${release.name} (${release.id}) to ${savePath}`));
 
@@ -713,11 +718,11 @@ Main.prototype.statusUpdate = function (id, status) {
       .doc(id)
       .set({
         status: {
-          [getPlatform()]: update,        
+          [getPlatform()]: update,
         }
       },{merge: true})
-      .then(r => resolve(r))  
-      .catch(r => reject(e))      
+      .then(r => resolve(r))
+      .catch(r => reject(e))
   });
 };
 
@@ -732,7 +737,7 @@ Main.prototype.iterateRelevantAssets = function (currentRelease, data, fn) {
 
   for (var i = 0; i < currentRelease.assets.length; i++) {
     const asset = currentRelease.assets[i];
-    
+
     // if (platform === 'windows') {
       if (false
         || asset.name.match(/\.exe$/)
@@ -744,9 +749,9 @@ Main.prototype.iterateRelevantAssets = function (currentRelease, data, fn) {
         if (fn) {
           fn(asset)
         }
-      }      
+      }
     // }
-  }   
+  }
 
   return matches;
 };
@@ -766,7 +771,7 @@ function getPlatform() {
 }
 
 function getHyphenatedName(data) {
-  return data.package.productName.replace(/ /ig, '-');  
+  return data.package.productName.replace(/ /ig, '-');
 }
 
 async function asyncCommand(command) {
