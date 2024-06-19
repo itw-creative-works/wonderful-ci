@@ -38,11 +38,11 @@ Install with npm if you plan to use `wonderful-ci` in a Node project or in the b
 npm install wonderful-ci
 ```
 
-## Example CLI Usage
+## 💻 Example CLI Usage
 Note: you may have to run cli commands with `npx wonderful-ci <command>` if you install this package locally.
   * `wonderful-ci`: Start the CI server and listen for updates!
 
-## Using Wonderful CI
+## ⚡️ Using Wonderful CI
 After you have followed the install step, you can start using `wonderful-ci` to codesign your apps across different operating systems.
 
 For a more in-depth documentation of this library and the Wonderful CI service, please visit the official Wonderful CI website.

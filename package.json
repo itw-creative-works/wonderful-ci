@@ -1,6 +1,6 @@
 {
   "name": "wonderful-ci",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "Automated EV Code Signing Server",
   "main": "./dist/index.js",
   "bin": {
@@ -11,7 +11,7 @@
     "start": "npm run prepare && ./bin/wonderful-ci",
     "_start": "npm run prepare && node ./dist/index.js",
     "help": "echo 'npm start -- -v'",
-    "prepare": "node -e 'require(`prepare-package`)()'",
+    "prepare": "node -e \"require('prepare-package')()\"",
     "prepare:watch": "nodemon -w ./src -e '*' --exec 'npm run prepare'"
   },
   "repository": {
@@ -40,16 +40,15 @@
   },
   "dependencies": {
     "@octokit/rest": "^19.0.4",
-    "axios": "^0.27.2",
-    "backend-manager": "^3.2.169",
+    "backend-manager": "^3.2.170",
     "chalk": "^4.1.2",
-    "itwcw-package-analytics": "^1.0.1",
+    "itwcw-package-analytics": "^1.0.4",
     "mime-types": "^2.1.35",
     "yaml": "^2.1.2"
   },
   "devDependencies": {
     "mocha": "^8.4.0",
-    "prepare-package": "^1.1.8"
+    "prepare-package": "^1.1.12"
   },
   "peerDependencies": {
     "automately": "^1.0.2"
