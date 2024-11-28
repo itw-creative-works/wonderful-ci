@@ -1,6 +1,6 @@
 {
   "name": "wonderful-ci",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "description": "Automated EV Code Signing Server",
   "main": "./dist/index.js",
   "bin": {
@@ -19,7 +19,7 @@
     "url": "git+https://github.com/itw-creative-works/ev-code-signing-server.git"
   },
   "engines": {
-    "node": "16"
+    "node": "18"
   },
   "keywords": [
     "ci",
